@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel e Overlay Valorant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* =========================================
+           VARIÁVEIS E RESET
+           ========================================= */
+        :root {
+            --bg-dark: #111111;
+            --panel-bg: #1f1f1f;
+            --val-red: #ff4655;
+            --val-green: #57b771;
+            --text-main: #ece8e1;
+            --text-muted: #9ca3af;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: var(--text-main);
+            /* O fundo muda via JS (escuro no painel, transparente no OBS) */
+        }
+
+        /* =========================================
+           ESTILOS DO PAINEL DE CONTROLO
+           ========================================= */
+        #control-panel {
+            display: none; /* Escondido por defeito, o JS decide se mostra */
+            min-height: 100vh;
+            background-color: var(--bg-dark);
+            padding: 40px 20px;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .panel-container {
+            background-color: var(--panel-bg);
+            padding: 30px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .panel-header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 20px;
+        }
+
+        .panel-header h1 { margin: 0 0 10px 0; color: var(--val-red); }
+        .panel-header p { margin: 0; color: var(--text-muted); }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .input-group { display: flex; flex-direction: column; gap: 8px; }
+        .input-group label { font-weight: 700; font-size: 14px; color: var(--text-muted); }
+        
+        .input-group input, .input-group select {
+            background-color: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            border-color: var(--val-red);
+        }
+
+        /* Área de Preview */
+        .preview-section {
+            background: repeating-linear-gradient( 45deg, #1a1a1a, #1a1a1a 10px, #222 10px, #222 20px );
+            padding: 40px 20px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            border: 1px dashed rgba(255,255,255,0.2);
+        }
+
+        /* Área do Link Final */
+        .link-section {
+            background-color: rgba(0,0,0,0.4);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .link-box {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .link-box input {
+            flex: 1;
+            padding: 12px;
+            background-color: #000;
+            border: 1px solid #333;
+            color: #57b771;
+            border-radius: 6px;
+            font-family: monospace;
+        }
+
+        .btn-copy {
+            background-color: var(--val-red);
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-copy:hover { background-color: #ff5e6b; }
+
+        /* =========================================
+           ESTILOS DA OVERLAY (O QUE VAI PARA O OBS)
+           ========================================= */
+        #overlay-wrapper {
+            /* Wrapper para podermos centrar no preview e isolar no OBS */
+            display: flex;
+        }
+
+        .overlay-container {
+            display: flex;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.85);
+            padding: 12px 24px;
+            border-radius: 8px;
+            width: max-content;
+            gap: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        #rank-img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
+        }
+
+        .stats-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.2;
+        }
+
+        .rr-row { font-size: 22px; font-weight: 900; }
+        .rr-row .positive { color: var(--val-green); margin-left: 6px; }
+        .rr-row .negative { color: var(--val-red); margin-left: 6px; }
+        .rr-row .neutral { color: var(--text-muted); margin-left: 6px; }
+
+        .wl-row { font-size: 16px; color: #f9f9f9; margin-top: 4px; }
+        .leaderboard-row { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+        .map-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding-left: 20px;
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .map-title { font-size: 14px; color: #e5e7eb; text-transform: uppercase; letter-spacing: 0.5px; }
+        .map-name { font-size: 18px; color: var(--val-green); margin-top: 4px; text-transform: capitalize; font-weight: 700;}
+
+        /* Pequena notificação */
+        #toast {
+            position: fixed; top: 20px; right: 20px;
+            background: var(--val-green); color: black;
+            padding: 10px 20px; border-radius: 4px; font-weight: bold;
+            opacity: 0; transition: opacity 0.3s; pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NOTIFICAÇÃO -->
+    <div id="toast">Copiado para a área de transferência!</div>
+
+    <!-- MODO 1: PAINEL DE CONTROLO -->
+    <div id="control-panel">
+        <div class="panel-container">
+            <div class="panel-header">
+                <h1>Gerador de Overlay - Valorant</h1>
+                <p>Crie a sua overlay personalizada e cole o link no OBS Studio.</p>
+            </div>
+
+            <!-- Preview em tempo real -->
+            <div class="input-group" style="margin-bottom: 10px;">
+                <label>Pré-visualização ao vivo:</label>
+            </div>
+            <div class="preview-section" id="preview-anchor">
+                <!-- A overlay será injetada aqui durante o modo painel -->
+            </div>
+
+            <!-- Formulários -->
+            <div class="form-grid">
+                <div class="input-group">
+                    <label for="input-rank">Seu Rank Atual</label>
+                    <select id="input-rank" onchange="updateOverlay()">
+                        <!-- Gerado via JS -->
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label for="input-rr">RR Atual</label>
+                    <input type="number" id="input-rr" value="50" oninput="updateOverlay()">
+                </div>
+
+                <div class="input-group">
+                    <label for="input-change">Ganho/Perda de RR (ex: 20 ou -15)</label>
+                    <input type="number" id="input-change" value="20" oninput="updateOverlay()">
+                </div>
+
+                <div class="input-group">
+                    <label for="input-wins">Vitórias (W)</label>
+                    <input type="number" id="input-wins" value="3" min="0" oninput="updateOverlay()">
+                </div>
+
+                <div class="input-group">
+                    <label for="input-losses">Derrotas (L)</label>
+                    <input type="number" id="input-losses" value="1" min="0" oninput="updateOverlay()">
+                </div>
+
+                <div class="input-group">
+                    <label for="input-map">Último Mapa</label>
+                    <select id="input-map" onchange="updateOverlay()">
+                        <option value="Breeze">Breeze</option>
+                        <option value="Bind">Bind</option>
+                        <option value="Fracture">Fracture</option>
+                        <option value="Haven">Haven</option>
+                        <option value="Lotus">Lotus</option>
+                        <option value="Pearl" selected>Pearl</option>
+                        <option value="Split">Split</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label for="input-top">Top # (Apenas Radiante/Imortal)</label>
+                    <input type="text" id="input-top" placeholder="Ex: 85 (Deixe vazio para esconder)" oninput="updateOverlay()">
+                </div>
+            </div>
+
+            <!-- Geração do Link -->
+            <div class="link-section">
+                <h3>O seu Link para o OBS Studio</h3>
+                <p style="font-size: 14px; color: var(--text-muted); margin: 0;">Adicione uma fonte de "Navegador" no OBS e cole o link abaixo. Largura: 400, Altura: 150.</p>
+                <div class="link-box">
+                    <input type="text" id="output-url" readonly>
+                    <button class="btn-copy" onclick="copyUrl()">Copiar Link</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODO 2: A OVERLAY EM SI -->
+    <div id="overlay-wrapper">
+        <div class="overlay-container">
+            <img id="rank-img" src="" alt="Rank">
+            <div class="stats-column">
+                <div class="rr-row">
+                    <span id="current-rr">0RR</span>
+                    <span id="rr-change" class="positive">+0</span>
+                </div>
+                <div class="wl-row">
+                    <span id="wins">0W</span> <span id="losses">0L</span>
+                </div>
+                <div class="leaderboard-row" id="leaderboard" style="display: none;">
+                    #0
+                </div>
+            </div>
+            <div class="map-column">
+                <div class="map-title">Último mapa</div>
+                <div id="last-map" class="map-name">Carregando</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE LÓGICA -->
+    <script>
+        // 1. GERAR LISTA DE RANKS (Baseado nos IDs do Tracker.gg para imagens fáceis)
+        const rankNames = ["Ferro", "Bronze", "Prata", "Ouro", "Platina", "Diamante", "Ascendente", "Imortal"];
+        const selectRank = document.getElementById('input-rank');
+        let currentTierId = 3; // Ferro 1 começa no ID 3 na maioria das APIs
+
+        // Adicionar Não Ranqueado
+        selectRank.innerHTML += `<option value="0">Sem Rank</option>`;
+
+        // Gerar Ferro a Imortal
+        rankNames.forEach(rank => {
+            for (let i = 1; i <= 3; i++) {
+                // Seleciona Platina 1 (ID 15) por defeito
+                let isSelected = (currentTierId === 15) ? "selected" : "";
+                selectRank.innerHTML += `<option value="${currentTierId}" ${isSelected}>${rank} ${i}</option>`;
+                currentTierId++;
+            }
+        });
+        // Adicionar Radiante (ID 27)
+        selectRank.innerHTML += `<option value="27">Radiante</option>`;
+
+        // 2. SISTEMA DE ROTAS (Descobre se é para mostrar Painel ou Overlay)
+        const urlParams = new URLSearchParams(window.location.search);
+        const isOverlayMode = urlParams.get('mode') === 'obs';
+
+        const controlPanel = document.getElementById('control-panel');
+        const overlayWrapper = document.getElementById('overlay-wrapper');
+
+        if (isOverlayMode) {
+            // ==========================================
+            // MODO: OBS STUDIO (Lê a URL e preenche a Overlay)
+            // ==========================================
+            controlPanel.style.display = 'none';
+            document.body.style.backgroundColor = 'transparent'; // Essencial para OBS
+            document.body.style.padding = '0'; // Tira margens
+
+            // Extrair dados do Link gerado
+            const tier = urlParams.get('tier') || '15';
+            const rr = urlParams.get('rr') || '0';
+            const change = parseInt(urlParams.get('change') || '0');
+            const w = urlParams.get('w') || '0';
+            const l = urlParams.get('l') || '0';
+            const map = urlParams.get('map') || 'Desconhecido';
+            const top = urlParams.get('top') || '';
+
+            // Preencher o HTML da Overlay com imagens oficiais da Riot
+            document.getElementById('rank-img').src = `https://media.valorant-api.com/competitivetiers/03621f52-342b-cf4e-4f86-9350a49c6d04/${tier}/largeicon.png`;
+            document.getElementById('current-rr').innerText = `${rr}RR`;
+            
+            const changeEl = document.getElementById('rr-change');
+            if (change > 0) {
+                changeEl.innerText = `+${change}`;
+                changeEl.className = 'positive';
+            } else if (change < 0) {
+                changeEl.innerText = `${change}`;
+                changeEl.className = 'negative';
+            } else {
+                changeEl.innerText = `+0`;
+                changeEl.className = 'neutral';
+            }
+
+            document.getElementById('wins').innerText = `${w}W`;
+            document.getElementById('losses').innerText = `${l}L`;
+            document.getElementById('last-map').innerText = map;
+
+            if (top.trim() !== "") {
+                document.getElementById('leaderboard').innerText = `#${top}`;
+                document.getElementById('leaderboard').style.display = 'block';
+            } else {
+                document.getElementById('leaderboard').style.display = 'none';
+            }
+
+        } else {
+            // ==========================================
+            // MODO: PAINEL DE CONTROLO
+            // ==========================================
+            controlPanel.style.display = 'flex';
+            document.body.style.backgroundColor = 'var(--bg-dark)';
+            
+            // Move a overlay para dentro da área de preview
+            const previewAnchor = document.getElementById('preview-anchor');
+            previewAnchor.appendChild(overlayWrapper);
+
+            // Atualiza a primeira vez
+            updateOverlay();
+        }
+
+        // 3. FUNÇÕES DO PAINEL DE CONTROLO
+        function updateOverlay() {
+            // Pega os valores digitados
+            const tier = document.getElementById('input-rank').value;
+            const rr = document.getElementById('input-rr').value || '0';
+            const change = parseInt(document.getElementById('input-change').value || '0');
+            const w = document.getElementById('input-wins').value || '0';
+            const l = document.getElementById('input-losses').value || '0';
+            const map = document.getElementById('input-map').value || 'Nenhum';
+            const top = document.getElementById('input-top').value;
+
+            // Atualiza o Visual do Preview com imagens oficiais da Riot
+            document.getElementById('rank-img').src = `https://media.valorant-api.com/competitivetiers/03621f52-342b-cf4e-4f86-9350a49c6d04/${tier}/largeicon.png`;
+            document.getElementById('current-rr').innerText = `${rr}RR`;
+            
+            const changeEl = document.getElementById('rr-change');
+            if (change > 0) {
+                changeEl.innerText = `+${change}`;
+                changeEl.className = 'positive';
+            } else if (change < 0) {
+                changeEl.innerText = `${change}`;
+                changeEl.className = 'negative';
+            } else {
+                changeEl.innerText = `+0`;
+                changeEl.className = 'neutral';
+            }
+
+            document.getElementById('wins').innerText = `${w}W`;
+            document.getElementById('losses').innerText = `${l}L`;
+            document.getElementById('last-map').innerText = map;
+
+            if (top.trim() !== "") {
+                document.getElementById('leaderboard').innerText = `#${top}`;
+                document.getElementById('leaderboard').style.display = 'block';
+            } else {
+                document.getElementById('leaderboard').style.display = 'none';
+            }
+
+            // GERA O LINK DO OBS
+            // window.location.origin + window.location.pathname pega o caminho do seu ficheiro no PC
+            const baseUrl = window.location.origin + window.location.pathname;
+            const params = new URLSearchParams({
+                mode: 'obs',
+                tier: tier,
+                rr: rr,
+                change: change,
+                w: w,
+                l: l,
+                map: map,
+                top: top
+            });
+
+            document.getElementById('output-url').value = `${baseUrl}?${params.toString()}`;
+        }
+
+        function copyUrl() {
+            const urlInput = document.getElementById('output-url');
+            urlInput.select();
+            urlInput.setSelectionRange(0, 99999); // Para telemóveis
+            
+            // Tenta usar a API de clipboard do navegador
+            try {
+                document.execCommand('copy');
+                
+                // Mostra notificação
+                const toast = document.getElementById('toast');
+                toast.style.opacity = '1';
+                setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+            } catch (err) {
+                console.error("Erro ao copiar: ", err);
+            }
+        }
+    </script>
+</body>
+</html>
