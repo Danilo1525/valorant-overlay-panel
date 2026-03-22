@@ -44,7 +44,7 @@
 
         /* Preview Area */
         .preview-area { background: repeating-linear-gradient(45deg, #0d0d12, #0d0d12 10px, #14141c 10px, #14141c 20px); padding: 60px 20px; display: flex; justify-content: center; align-items: center; border-bottom: 1px solid var(--border-color); position: relative; min-height: 220px; }
-        .preview-area.transparent-mode { background: repeating-linear-gradient(45deg, #c5c5c5, #c5c5c5 10px, #b0b0b0 10px, #b0b0b0 20px); } /* Axadrezado de transparência */
+        .preview-area.transparent-mode { background: repeating-linear-gradient(45deg, #c5c5c5, #c5c5c5 10px, #b0b0b0 10px, #b0b0b0 20px); }
         
         .preview-label { position: absolute; top: 15px; left: 20px; font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px;}
         .preview-label::before { content: ''; display: inline-block; width: 8px; height: 8px; background: var(--val-red); border-radius: 50%; box-shadow: 0 0 8px var(--val-red); animation: pulse 2s infinite;}
@@ -110,17 +110,12 @@
         @keyframes slideIn { 0% { transform: translateX(-40px); opacity: 0; } 100% { transform: translateX(0); opacity: 1; } }
 
         .overlay-container {
-            display: flex; align-items: center; background-color: var(--custom-bg); padding: 14px 28px; border-radius: 12px; width: max-content; gap: 24px; box-shadow: var(--overlay-shadow); border: var(--overlay-border); animation: slideIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; position: relative;
+            display: flex; align-items: center; background-color: var(--custom-bg); padding: 14px 28px; border-radius: 12px; width: max-content; gap: 24px; box-shadow: var(--overlay-shadow); border: var(--overlay-border); animation: slideIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; position: relative; transition: background-color 0.3s ease;
         }
         
-        /* Modificador para transparência total (remove fundo, sombra e borda) */
-        .overlay-container.is-transparent {
-            background-color: transparent !important;
-            box-shadow: none !important;
-            border: none !important;
-        }
+        .overlay-container.is-transparent { background-color: transparent !important; box-shadow: none !important; border: none !important; }
 
-        #rank-img { width: 70px; height: 70px; object-fit: contain; filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.15)); transition: 0.3s ease;}
+        #rank-img { width: 70px; height: 70px; object-fit: contain; filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.15)); transition: src 0.3s ease;}
 
         .stats-column { display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; }
         .rr-row { font-size: 28px; font-weight: 900; color: var(--custom-text); letter-spacing: -0.5px;}
@@ -139,6 +134,7 @@
 
         /* Estado de Loading e Toasts */
         .loading-api { display: none; position: absolute; inset: 0; background: var(--custom-bg); border-radius: 12px; align-items: center; justify-content: center; font-size: 15px; font-weight: bold; color: var(--custom-accent); z-index: 10; backdrop-filter: blur(5px);}
+        .is-transparent .loading-api { background: rgba(0,0,0,0.6); } /* Se for transparente, dá só um escurecimento leve no loading inicial */
         
         #toast { position: fixed; top: 20px; right: 20px; background: var(--val-green); color: #000; padding: 14px 28px; border-radius: 8px; font-weight: 800; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 999; box-shadow: 0 8px 25px rgba(0,0,0,0.4); transform: translateY(-10px);}
         #toast.error { background: var(--val-error); color: white; }
@@ -148,6 +144,9 @@
 
     <div id="toast">✅ Sucesso!</div>
 
+    <!-- =========================================
+         PAINEL DE CONTROLO
+         ========================================= -->
     <div id="control-panel">
         
         <div class="header-brand">
@@ -156,16 +155,20 @@
         </div>
 
         <div class="app-container">
+            <!-- PREVIEW AREA -->
             <div class="preview-area" id="preview-anchor">
                 <span class="preview-label">A Vivo no OBS</span>
-                </div>
+                <!-- Overlay é injetada aqui via JS -->
+            </div>
 
+            <!-- NAVEGAÇÃO DE ABAS -->
             <div class="tabs">
                 <button class="tab-btn active" onclick="window.app.ui.switchTab('tab-design')">1. Design & Cores</button>
                 <button class="tab-btn" onclick="window.app.ui.switchTab('tab-manual')">2. Modo Manual</button>
                 <button class="tab-btn" onclick="window.app.ui.switchTab('tab-api')">3. Modo Automático (API)</button>
             </div>
 
+            <!-- CONTEÚDO: DESIGN -->
             <div id="tab-design" class="tab-content active">
                 <div class="form-grid">
                     <div class="input-group" style="justify-content: center; grid-column: 1 / -1; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
@@ -213,6 +216,7 @@
                 </div>
             </div>
 
+            <!-- CONTEÚDO: MODO MANUAL -->
             <div id="tab-manual" class="tab-content">
                 <p style="font-size: 13px; color: var(--text-muted); margin-top: 0; margin-bottom: 24px;">Use este modo se preferir atualizar os dados manualmente durante a live.</p>
                 <div class="form-grid">
@@ -255,9 +259,10 @@
                 </div>
             </div>
 
+            <!-- CONTEÚDO: MODO AUTOMÁTICO API -->
             <div id="tab-api" class="tab-content">
                 <p style="font-size: 13px; color: var(--text-muted); margin-top: 0; margin-bottom: 24px; line-height: 1.5;">
-                    <strong style="color: var(--val-red);">Sessão Smart (Começa Zerado!):</strong> Ao colar o link no OBS, o placar iniciará em <strong>0W - 0L</strong>. Ele rastreará automaticamente as partidas que você jogar enquanto a live estiver aberta.
+                    <strong style="color: var(--val-red);">Sessão Smart:</strong> A overlay vai carregar apenas uma vez quando você abrir o OBS. Depois, os dados atualizarão sozinhos em segundo plano a cada 3 minutos, sem ecrãs de loading ou interrupções.
                 </p>
                 <div class="form-grid">
                     <div class="input-group">
@@ -275,6 +280,7 @@
                 </div>
             </div>
 
+            <!-- EXPORTAÇÃO DO LINK -->
             <div class="export-section">
                 <div class="export-info">
                     <h3>O Seu Link do OBS</h3>
@@ -293,6 +299,9 @@
         </div>
     </div>
 
+    <!-- =========================================
+         A OVERLAY EM SI (RENDER NO OBS)
+         ========================================= -->
     <div id="overlay-wrapper">
         <div class="overlay-container" id="main-overlay">
             
@@ -317,6 +326,9 @@
         </div>
     </div>
 
+    <!-- =========================================
+         JAVASCRIPT / ARQUITETURA MODULAR ORIENTADA A OBJETOS
+         ========================================= -->
     <script>
         /**
          * ⚙️ MÓDULO 1: CONFIGURAÇÕES E CONSTANTES
@@ -423,6 +435,7 @@
             }
 
             updateOverlayData(tierId, rr, change, w, l, mapName) {
+                // Ao atualizar o src e o text, a mudança é imediata e silenciosa para o utilizador
                 document.getElementById('rank-img').src = `${CONFIG.ASSETS_BASE}/${tierId}/largeicon.png`;
                 document.getElementById('current-rr').innerText = `${rr}RR`;
                 document.getElementById('wins').innerText = `${w}W`;
@@ -441,12 +454,10 @@
                     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
                 };
 
-                // Cores do texto e acento aplicam-se sempre
                 document.documentElement.style.setProperty('--custom-accent', accentHex);
                 document.documentElement.style.setProperty('--custom-text', textHex);
                 document.getElementById('branding').style.display = noWm ? 'none' : 'block';
                 
-                // Lógica de transparência (Preview e OBS)
                 const overlayCont = document.getElementById('main-overlay');
                 const previewArea = document.getElementById('preview-anchor');
 
@@ -484,7 +495,6 @@
                 const noWm = document.getElementById('remove-watermark').checked;
                 const isTransparent = document.getElementById('transparent-bg').checked;
 
-                // UI feedback no painel
                 const bgGroup = document.getElementById('group-color-bg');
                 if(isTransparent) bgGroup.classList.add('disabled'); else bgGroup.classList.remove('disabled');
 
@@ -536,9 +546,15 @@
                 this.ui = new UIController();
             }
 
-            async fetchAutomatedData(nick, tag, isPanelTest = false) {
+            // Adicionamos o parâmetro isSilent para esconder o ecrã de loading nas atualizações em segundo plano
+            async fetchAutomatedData(nick, tag, isPanelTest = false, isSilent = false) {
                 if(!nick || !tag) return;
-                this.ui.setLoading(true, isPanelTest ? 'Sincronizando...' : 'Atualizando...');
+                
+                // Só mostra o ecrã desfocado de loading se NÃO for uma atualização silenciosa (ou seja, apenas na 1ª vez)
+                if (!isSilent) {
+                    this.ui.setLoading(true, isPanelTest ? 'Sincronizando...' : 'Conectando à Riot...');
+                }
+
                 try {
                     const region = await this.api.getAccountRegion(nick, tag);
                     const dataMMR = await this.api.getMMR(region, nick, tag);
@@ -556,19 +572,26 @@
                             }
                         }
                     }
+                    // A atualização na tela é fluída e imediata
                     this.ui.updateOverlayData(dataMMR.currenttier || 0, dataMMR.ranking_in_tier || 0, dataMMR.mmr_change_to_last_game || 0, w, l, lastMap);
-                    if(isPanelTest) this.ui.showToast("✅ Conta ligada!");
+                    
+                    if(isPanelTest) this.ui.showToast("✅ Conta sincronizada!");
                 } catch (error) {
-                    console.error(error);
-                    if(isPanelTest) this.ui.showToast("❌ Erro ao sincronizar conta.", true);
-                } finally { this.ui.setLoading(false); }
+                    console.error("API Error: ", error);
+                    if(isPanelTest) this.ui.showToast("❌ Falha na sincronização. Verifique o Nick.", true);
+                } finally { 
+                    // Remove o loading (caso tenha sido ativado)
+                    if (!isSilent) {
+                        this.ui.setLoading(false); 
+                    }
+                }
             }
 
             testAPI() {
                 const nick = document.getElementById('api-nick').value.trim();
                 const tag = document.getElementById('api-tag').value.trim();
                 if(!nick || !tag) { this.ui.showToast("⚠️ Preencha Nick e Tagline!", true); return; }
-                this.fetchAutomatedData(encodeURIComponent(nick), encodeURIComponent(tag), true);
+                this.fetchAutomatedData(encodeURIComponent(nick), encodeURIComponent(tag), true, false);
             }
 
             init() {
@@ -584,7 +607,7 @@
                         urlParams.get('cAccent') || '#57b771',
                         urlParams.get('cText') || '#ffffff',
                         urlParams.get('noWm') === 'true',
-                        urlParams.get('trans') === 'true' // Lê a transparência da URL
+                        urlParams.get('trans') === 'true'
                     );
 
                     if (mode === 'obs_manual') {
@@ -592,8 +615,12 @@
                     } else if (mode === 'obs_auto') {
                         const nick = decodeURIComponent(urlParams.get('nick'));
                         const tag = decodeURIComponent(urlParams.get('tag'));
-                        this.fetchAutomatedData(nick, tag, false);
-                        setInterval(() => this.fetchAutomatedData(nick, tag, false), CONFIG.UPDATE_INTERVAL);
+                        
+                        // Chamada inicial (Mostra ecrã de loading rápido para o streamer saber que conectou)
+                        this.fetchAutomatedData(nick, tag, false, false);
+                        
+                        // Atualizações em Segundo Plano (A cada 3 min, 100% invisíveis, isSilent = true)
+                        setInterval(() => this.fetchAutomatedData(nick, tag, false, true), CONFIG.UPDATE_INTERVAL);
                     }
                 } else {
                     document.getElementById('control-panel').style.display = 'flex';
